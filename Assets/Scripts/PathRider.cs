@@ -9,8 +9,8 @@ public class PathRider : MonoBehaviour {
 	public float onPathSpeed = 2f;
 	public float offPathSpeed = 2.5f;
 
-	public LineRenderer currentPath;
-	Vector3[] currentPathVectors;
+	RidePath currentPath = null;
+	Vector3[] currentPathVectors = null;
 
 	float startTime = 1f;
 	float startTimer = 0f;
@@ -29,10 +29,6 @@ public class PathRider : MonoBehaviour {
 	void Start () {
 		cd = GetComponent<BoxCollider2D>();
 		velocity = new Vector2(offPathSpeed, 0f);
-		currentPathVectors = new Vector3[currentPath.positionCount];
-		currentPath.GetPositions(currentPathVectors);
-
-		//gameObject.transform.position = currentPathVectors[0];
 	}
 	
 	void Update() {
@@ -42,8 +38,6 @@ public class PathRider : MonoBehaviour {
 			RidePath(currentPathVectors);
 		}*/
 		started = true;
-		/*if (!onPath)
-			LeanTween.moveSppath(gameObject, positions, 10f).setSpeed(2f).setOnComplete(LeavePath);*/
 	}
 
 	/// <summary>
@@ -101,9 +95,9 @@ public class PathRider : MonoBehaviour {
 
 			// If player hits path, snap to the nearest path hit
 			if (hit) {
-				Debug.Log("hit!!!");
+				Debug.Log("Hit a path!");
 				RidePath path = closestHitInfo.collider.gameObject.GetComponent<RidePath>();
-				PlaceSelfInPath(closestHitInfo.point, path.pathVectors);
+				PlaceSelfInPath(closestHitInfo.point, path);
 			}
 		}
 	}
@@ -123,42 +117,64 @@ public class PathRider : MonoBehaviour {
 		}
 	}
 
-	void PlaceSelfInPath(Vector3 pos, Vector3[] path) {
+	void PlaceSelfInPath(Vector3 pos, RidePath path) {
 		// Find closest point in path
+		Vector3[] pathVectors = path.pathVectors;
 		float shortestDistance = float.MaxValue;
 		int shortest = -1;
-		for (int i = 0; i < path.Length; i++) {
-			float distance = Vector3.Distance(pos, path[i]);
+		for (int i = 0; i < pathVectors.Length; i++) {
+			float distance = Vector3.Distance(pos, pathVectors[i]);
 			if (distance < shortestDistance) {
 				shortestDistance = distance;
 				shortest = i;
 			}
 		}
 
-		// Create new path starting from boarding point
-		int newPathLength = path.Length - shortest;
+		// Get length of partial path
+		int partialPathLength = pathVectors.Length - shortest;
 		
-		// LT requires 4 or more points in a spline path!
-		if (newPathLength > 3) {
-			Vector3[] newPath = new Vector3[newPathLength];
-			for (int i = 0; i < newPathLength; i++) {
-				newPath[i] = path[shortest + i];
-			}
-			
-			// Ride newly created path
-			RidePath(newPath);
+		// LeanTween requires 4 or more points in a spline path!
+		if (partialPathLength > 3) {
+
+			// Ride partial path
+			RidePath(path, shortest);
 		}
 	}
 
-	void RidePath(Vector3[] path) {
+	void RidePath(RidePath path, int start = 0) {
+		Vector3[] ridePath = new Vector3[0];
+
+		// Trim beginning of vector array if starting index is not 0...
+		if (start != 0) {
+			int partialPathLength = path.pathVectors.Length - start;
+			ridePath = new Vector3[partialPathLength];
+			for (int i = 0; i < partialPathLength; i++) {
+				ridePath[i] = path.pathVectors[start + i];
+			}
+		} 
+		// ...Otherwise, just ride the provided path from the beginning
+		else {
+			ridePath = path.pathVectors;
+		}
+
+		// Ride the path!
+		LeanTween.moveSpline(gameObject, ridePath, 10f).setSpeed(onPathSpeed).setOnComplete(LeavePath);
 		onPath = true;
-		LeanTween.moveSpline(gameObject, path, 10f).setSpeed(onPathSpeed).setOnComplete(LeavePath);
+		currentPath = path;
+		currentPathVectors = ridePath;
 	}
 
 	void LeavePath() {
+		// Set velocity according to last direction of travel on path
+		int last = currentPathVectors.Length - 1;
+		Vector2 direction = (currentPathVectors[last] - currentPathVectors[last - 1]).normalized;
+		velocity = direction * offPathSpeed;
+
+		// Exit from end of path
 		LeanTween.cancel(gameObject);
 		onPath = false;
-		velocity = new Vector2(offPathSpeed, 0f);
+		currentPath = null;
+		currentPathVectors = null;
 	}
 
 	/// <summary>
