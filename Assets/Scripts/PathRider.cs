@@ -54,7 +54,7 @@ public class PathRider : MonoBehaviour {
 
 		// Apply gravity
 		if (!onPath) {
-			velocity = new Vector2(offPathSpeed, Mathf.Max(velocity.y - gravity, -maxFall));
+			velocity = new Vector2(velocity.x, Mathf.Max(velocity.y - gravity, -maxFall));
 		} 
 		// Ride path
 		else {
@@ -67,10 +67,10 @@ public class PathRider : MonoBehaviour {
 			Vector2 minRay = new Vector2(box.xMin, box.center.y);
 			Vector2 maxRay = new Vector2(box.xMax, box.center.y);	
 
-			// Calculate ray distance (current fall speed)
+			// Calculate ray distance (current fall speed) and direction
 			float rayDistance = box.height / 2 + Mathf.Abs(velocity.y * Time.deltaTime);
 
-			// Check below for path
+			// Cast the ray to check for path
 			RaycastHit2D[] hitInfo = new RaycastHit2D[vRays];
 			bool hit = false;
 			float closestHit = float.MaxValue;
@@ -79,8 +79,8 @@ public class PathRider : MonoBehaviour {
 				// Create and cast ray
 				float lerpDistance = (float)i / (float)(vRays - 1);
 				Vector2 rayOrigin = Vector2.Lerp(minRay, maxRay, lerpDistance);
-				Ray2D ray = new Ray2D(rayOrigin, Vector2.down);
-				hitInfo[i] = Physics2D.Raycast(rayOrigin, Vector2.down, rayDistance);
+				Ray2D ray = new Ray2D(rayOrigin, velocity.normalized);
+				hitInfo[i] = Physics2D.Raycast(rayOrigin, velocity.normalized, rayDistance);
 				Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.cyan, 1f);
 				// Check raycast results and keep track of closest path hit
 				if (hitInfo[i].fraction > 0) {
@@ -95,9 +95,9 @@ public class PathRider : MonoBehaviour {
 
 			// If player hits path, snap to the nearest path hit
 			if (hit) {
-				Debug.Log("Hit a path!");
 				RidePath path = closestHitInfo.collider.gameObject.GetComponent<RidePath>();
-				PlaceSelfInPath(closestHitInfo.point, path);
+				if (path)
+					PlaceSelfInPath(closestHitInfo.point, path);
 			}
 		}
 	}
@@ -130,26 +130,34 @@ public class PathRider : MonoBehaviour {
 			}
 		}
 
-		// Get length of partial path
-		int partialPathLength = pathVectors.Length - shortest;
+		// Get length of partial path (+ 1 as our point of contact will be the starting point)
+		int partialPathLength = (pathVectors.Length - shortest) + 1;
 		
 		// LeanTween requires 4 or more points in a spline path!
 		if (partialPathLength > 3) {
-
 			// Ride partial path
-			RidePath(path, shortest);
+			RidePath(path, shortest, pos);
 		}
 	}
 
-	void RidePath(RidePath path, int start = 0) {
+	void RidePath(RidePath path, int start = 0, Vector3? startVector = null) {
 		Vector3[] ridePath = new Vector3[0];
 
 		// Trim beginning of vector array if starting index is not 0...
 		if (start != 0) {
 			int partialPathLength = path.pathVectors.Length - start;
-			ridePath = new Vector3[partialPathLength];
-			for (int i = 0; i < partialPathLength; i++) {
-				ridePath[i] = path.pathVectors[start + i];
+			int startIndex = 0;
+			// Change starting vector if provided
+			if (startVector != null && startVector.GetType().Equals(typeof(Vector3))) {
+				ridePath = new Vector3[partialPathLength + 1];
+				ridePath[0] = (Vector3)startVector;
+				startIndex = 1;
+			} else {
+				ridePath = new Vector3[partialPathLength];
+			}
+			// Assemble path
+			for (int i = startIndex; i < partialPathLength + startIndex; i++) {
+				ridePath[i] = path.pathVectors[start + i - startIndex];
 			}
 		} 
 		// ...Otherwise, just ride the provided path from the beginning
@@ -158,6 +166,11 @@ public class PathRider : MonoBehaviour {
 		}
 
 		// Ride the path!
+		Debug.Log("riding path!");
+		for (int i = 0; i < ridePath.Length - 1; i++) {
+			Debug.DrawLine(ridePath[i], ridePath[i+1], Color.red, 5.0f);
+		}
+
 		LeanTween.moveSpline(gameObject, ridePath, 10f).setSpeed(onPathSpeed).setOnComplete(LeavePath);
 		onPath = true;
 		currentPath = path;
@@ -171,6 +184,7 @@ public class PathRider : MonoBehaviour {
 		velocity = direction * offPathSpeed;
 
 		// Exit from end of path
+		Debug.Log("exiting path!");
 		LeanTween.cancel(gameObject);
 		onPath = false;
 		currentPath = null;
