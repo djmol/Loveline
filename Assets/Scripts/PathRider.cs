@@ -11,6 +11,10 @@ public class PathRider : MonoBehaviour {
 
 	RidePath currentPath = null;
 	Vector3[] currentPathVectors = null;
+	LTSpline currentSpline = null;
+	Vector3 currentPathVector = Vector3.zero;
+	int currentPathVectorIndex = 0;
+	Vector3 nextPathVector = Vector3.zero;
 
 	float startTime = 1f;
 	float startTimer = 0f;
@@ -22,7 +26,7 @@ public class PathRider : MonoBehaviour {
 	Rect box;
 
 	// Raycasting
-	int vRays = 4;
+	int numRays = 1;
 	RaycastHit2D closestHitInfo;
 
 	// Use this for initialization
@@ -58,48 +62,57 @@ public class PathRider : MonoBehaviour {
 		} 
 		// Ride path
 		else {
-			//velocity = new Vector2(onPathSpeed, 0f);
+			if (currentSpline.ratioAtPoint(nextPathVector) < currentSpline.ratioAtPoint(transform.position)) {
+				currentPathVector = nextPathVector;
+				currentPathVectorIndex++;
+				nextPathVector = currentPathVectors[currentPathVectorIndex + 1];
+			}
+			velocity = (nextPathVector - currentPathVector).normalized * onPathSpeed;
 		}
 
-		// If not on path, check for path below
-		if (!onPath) {
-			// Determine first and last rays
-			Vector2 minRay = new Vector2(box.xMin, box.center.y);
-			Vector2 maxRay = new Vector2(box.xMax, box.center.y);	
+		// Check for paths
+		// Determine first and last rays
+		//Vector2 minRay = new Vector2(box.xMin, box.center.y);
+		//Vector2 maxRay = new Vector2(box.xMax, box.center.y);	
 
-			// Calculate ray distance (current fall speed) and direction
-			float rayDistance = box.height / 2 + Mathf.Abs(velocity.y * Time.deltaTime);
+		// Calculate ray distance (current fall speed) and direction
+		//float rayDistance = box.height / 2 + Mathf.Abs(velocity.y * Time.deltaTime);
+		// TODO: This can't be right. The 1.5f is just to lengthen it a little to reduce the chance of missing an edge collider.
+		float rayDistance = Mathf.Abs(velocity.magnitude * 1.5f * Time.deltaTime);
 
-			// Cast the ray to check for path
-			RaycastHit2D[] hitInfo = new RaycastHit2D[vRays];
-			bool hit = false;
-			float closestHit = float.MaxValue;
-			int closestHitIndex = 0;
-			for (int i = 0; i < vRays; i++) {
-				// Create and cast ray
-				float lerpDistance = (float)i / (float)(vRays - 1);
-				Vector2 rayOrigin = Vector2.Lerp(minRay, maxRay, lerpDistance);
-				Ray2D ray = new Ray2D(rayOrigin, velocity.normalized);
-				hitInfo[i] = Physics2D.Raycast(rayOrigin, velocity.normalized, rayDistance);
-				Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.cyan, 1f);
-				// Check raycast results and keep track of closest path hit
-				if (hitInfo[i].fraction > 0) {
-					hit = true;
-					if (hitInfo[i].fraction < closestHit) {
-						closestHit = hitInfo[i].fraction;
-						closestHitIndex = i;
-						closestHitInfo = hitInfo[i];
-					}
+		// Cast the ray to check for path
+		RaycastHit2D[] hitInfo = new RaycastHit2D[numRays];
+		bool hit = false;
+		float closestHit = float.MaxValue;
+		int closestHitIndex = 0;
+		for (int i = 0; i < numRays; i++) {
+			// Create and cast ray
+			float lerpDistance = (float)i / (float)((numRays > 1) ? numRays - 1 : numRays);
+			Vector2 rayOrigin = transform.position; //Vector2.Lerp(minRay, maxRay, lerpDistance);
+			Ray2D ray = new Ray2D(rayOrigin, velocity.normalized);
+			hitInfo[i] = Physics2D.Raycast(rayOrigin, velocity.normalized, rayDistance);
+			Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.cyan, 1f);
+			// Check raycast results and keep track of closest path hit
+			if (hitInfo[i].fraction > 0) {
+				hit = true;
+				if (hitInfo[i].fraction < closestHit) {
+					closestHit = hitInfo[i].fraction;
+					closestHitIndex = i;
+					closestHitInfo = hitInfo[i];
 				}
 			}
-
-			// If player hits path, snap to the nearest path hit
-			if (hit) {
-				RidePath path = closestHitInfo.collider.gameObject.GetComponent<RidePath>();
-				if (path)
-					PlaceSelfInPath(closestHitInfo.point, path);
-			}
 		}
+
+		
+		if (hit) {
+			RidePath path = closestHitInfo.collider.gameObject.GetComponent<RidePath>();
+			// If path exists and is drawOrder is greater than current path's, snap to hit point
+			if (path)
+				if (currentPath == null || (path.drawOrder > currentPath.drawOrder && path != currentPath)) {
+					PlaceSelfInPath(closestHitInfo.point, path);
+				}
+		}
+		
 	}
 
 	/// <summary>
@@ -112,7 +125,8 @@ public class PathRider : MonoBehaviour {
 			if (onPath) {
 				
 			} else {
-				transform.Translate(velocity * Time.deltaTime);
+				if (currentPath == null)
+					transform.Translate(velocity * Time.deltaTime);
 			}
 		}
 	}
@@ -140,55 +154,66 @@ public class PathRider : MonoBehaviour {
 		}
 	}
 
-	void RidePath(RidePath path, int start = 0, Vector3? startVector = null) {
-		Vector3[] ridePath = new Vector3[0];
+	void RidePath(RidePath ridePath, int start = 0, Vector3? startVector = null) {
+		Vector3[] path = new Vector3[0];
 
 		// Trim beginning of vector array if starting index is not 0...
 		if (start != 0) {
-			int partialPathLength = path.pathVectors.Length - start;
+			int partialPathLength = ridePath.pathVectors.Length - start;
 			int startIndex = 0;
 			// Change starting vector if provided
 			if (startVector != null && startVector.GetType().Equals(typeof(Vector3))) {
-				ridePath = new Vector3[partialPathLength + 1];
-				ridePath[0] = (Vector3)startVector;
+				path = new Vector3[partialPathLength + 1];
+				path[0] = (Vector3)startVector;
 				startIndex = 1;
 			} else {
-				ridePath = new Vector3[partialPathLength];
+				path = new Vector3[partialPathLength];
 			}
 			// Assemble path
 			for (int i = startIndex; i < partialPathLength + startIndex; i++) {
-				ridePath[i] = path.pathVectors[start + i - startIndex];
+				path[i] = ridePath.pathVectors[start + i - startIndex];
 			}
 		} 
 		// ...Otherwise, just ride the provided path from the beginning
 		else {
-			ridePath = path.pathVectors;
+			path = ridePath.pathVectors;
 		}
 
 		// Ride the path!
 		Debug.Log("riding path!");
-		for (int i = 0; i < ridePath.Length - 1; i++) {
-			Debug.DrawLine(ridePath[i], ridePath[i+1], Color.red, 5.0f);
+		for (int i = 0; i < path.Length - 1; i++) {
+			Debug.DrawLine(path[i], path[i+1], Color.red, 5.0f);
 		}
 
-		LeanTween.moveSpline(gameObject, ridePath, 10f).setSpeed(onPathSpeed).setOnComplete(LeavePath);
 		onPath = true;
-		currentPath = path;
-		currentPathVectors = ridePath;
+		currentPath = ridePath;
+		currentPathVectors = path;
+		currentSpline = new LTSpline(path);
+		currentPathVectorIndex = 0;
+		currentPathVector = path[currentPathVectorIndex];
+		nextPathVector = path[currentPathVectorIndex + 1];
+		LeanTween.moveSpline(gameObject, path, 10f).setSpeed(onPathSpeed).setOnComplete(LeavePath);
 	}
 
 	void LeavePath() {
-		// Set velocity according to last direction of travel on path
-		int last = currentPathVectors.Length - 1;
-		Vector2 direction = (currentPathVectors[last] - currentPathVectors[last - 1]).normalized;
-		velocity = direction * offPathSpeed;
+		Debug.Log("trying to leave");
+		if (Mathf.Abs(currentSpline.ratioAtPoint(transform.position) - 1.0f) < 0.001f ) {
+			Debug.Log("approved to leave");
+			// Set velocity according to last direction of travel on path
+			int last = currentPathVectors.Length - 1;
+			Vector2 direction = (currentPathVectors[last] - currentPathVectors[last - 1]).normalized;
+			velocity = direction * offPathSpeed;
 
-		// Exit from end of path
-		Debug.Log("exiting path!");
-		LeanTween.cancel(gameObject);
-		onPath = false;
-		currentPath = null;
-		currentPathVectors = null;
+			// Exit from end of path
+			Debug.Log("exiting path!");
+			LeanTween.cancel(gameObject);
+			onPath = false;
+			currentPath = null;
+			currentPathVectors = null;
+			currentSpline = null;
+		} else {
+			LeanTween.moveSpline(gameObject, currentPathVectors, 10f).setSpeed(onPathSpeed).setOnComplete(LeavePath);
+		}
 	}
 
 	/// <summary>

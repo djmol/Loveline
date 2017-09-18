@@ -76,6 +76,7 @@ public class DrawListener : MonoBehaviour {
 		lineRend.positionCount = pathPoints.Count;
 		lineRend.SetPositions(pathPoints.ToArray());
 		RidePath ridePath = pathGO.AddComponent<RidePath>();
+		ridePath.drawOrder = pathsDrawn;
 	 }
 
 	 void ResetPath() {

@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class RidePath : MonoBehaviour {
 
+	public int drawOrder = 0;
 	public Vector3[] pathVectors { get; private set; }
 
 	EdgeCollider2D cd;
