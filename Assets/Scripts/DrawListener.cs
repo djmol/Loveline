@@ -9,6 +9,7 @@ public class DrawListener : MonoBehaviour {
 	public float endWidth = 1.0f;
 	public float threshold = 0.001f;
 	public GameObject playerPaths;
+	public Material drawingPathMaterial;
 	public Material pathMaterial;
 	public Slider drawResourceSlider;
 	public float drawResource = 10f;
@@ -80,6 +81,7 @@ public class DrawListener : MonoBehaviour {
 		lineRenderer.startWidth = startWidth;
 		lineRenderer.endWidth = endWidth;
 		lineRenderer.positionCount = pathPoints.Count;
+		lineRenderer.material = drawingPathMaterial;
 
 		for(int i = pathCount; i < pathPoints.Count; i++) {
 			lineRenderer.SetPosition(i, pathPoints[i]);
@@ -93,6 +95,7 @@ public class DrawListener : MonoBehaviour {
 		pathsDrawn++;
 		GameObject pathGO = new GameObject("Path " + pathsDrawn);
 		pathGO.transform.parent = playerPaths.transform;
+		pathGO.layer = LayerMask.NameToLayer("Path");
 		LineRenderer lineRend = pathGO.AddComponent<LineRenderer>();
 		lineRend.material = pathMaterial;
 		lineRend.startWidth = startWidth;
