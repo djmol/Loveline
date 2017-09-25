@@ -15,6 +15,8 @@ public class PathRider : MonoBehaviour {
 	Vector3 currentPathVector = Vector3.zero;
 	int currentPathVectorIndex = 0;
 	Vector3 nextPathVector = Vector3.zero;
+	
+	bool canRidePath = true;
 
 	float startTime = 1f;
 	float startTimer = 0f;
@@ -74,81 +76,10 @@ public class PathRider : MonoBehaviour {
 			velocity = (nextPathVector - currentPathVector).normalized * onPathSpeed;
 		}
 
-		// Check for non-path objects
-		// Determine first and last horizontal rays
-		Vector2 minHorzRay = new Vector2(box.center.x + (box.size.x / 2) * ((velocity.x > 0) ? 1 : -1), box.yMin);
-		Vector2 maxHorzRay = new Vector2(box.center.x + (box.size.x / 2) * ((velocity.x > 0) ? 1 : -1), box.yMax);
-
 		// Calculate ray distance (current fall speed) and direction
 		//float rayDistance = box.height / 2 + Mathf.Abs(velocity.y * Time.deltaTime);
 		// TODO: This can't be right. The 1.5f is just to lengthen it a little to reduce the chance of missing an edge collider.
 		float rayDistance = Mathf.Abs(velocity.magnitude * 1.5f * Time.deltaTime);
-
-		// Cast horizontal rays
-		RaycastHit2D[] horzHitInfo = new RaycastHit2D[numRays];
-		bool horzHit = false;
-		float closestHorzHit = float.MaxValue;
-		int closestHorzHitIndex = 0;
-		for (int i = 0; i < numRays; i++) {
-			// Create and cast rays
-			float lerpDistance = (float)i / (float)(numRays - 1);
-			Vector2 rayOrigin = Vector2.Lerp(minHorzRay, maxHorzRay, lerpDistance);
-			Ray2D ray = new Ray2D(rayOrigin, velocity.normalized);
-			horzHitInfo[i] = Physics2D.Raycast(rayOrigin, velocity.normalized, rayDistance, 1 << LayerMask.NameToLayer("Consumable"));
-			Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.magenta, 1f);
-			// Check raycast results and keep track of closest hit
-			if (horzHitInfo[i].fraction > 0) {
-				horzHit = true;
-				if (horzHitInfo[i].fraction < closestHorzHit) {
-					closestHorzHit = horzHitInfo[i].fraction;
-					closestHorzHitIndex = i;
-					closestHorzHitInfo = horzHitInfo[i];
-				}
-			}
-		}
-
-		// Check and handle what we hit
-		if (horzHit) {
-			Consumable consumable = closestHorzHitInfo.collider.gameObject.GetComponent<Consumable>();
-			if (consumable) {
-				consumable.gameObject.SetActive(false);
-			}
-		}
-
-		// Determine first and last vertical rays
-		Vector2 minVertRay = new Vector2(box.xMin, box.center.y + (box.size.y / 2) * ((velocity.y > 0) ? 1 : -1));
-		Vector2 maxVertRay = new Vector2(box.xMax, box.center.y + (box.size.y / 2) * ((velocity.y > 0) ? 1 : -1));
-
-		// Cast vertical rays
-		RaycastHit2D[] vertHitInfo = new RaycastHit2D[numRays];
-		bool vertHit = false;
-		float closestVertHit = float.MaxValue;
-		int closestVertHitIndex = 0;
-		for (int i = 0; i < numRays; i++) {
-			// Create and cast rays
-			float lerpDistance = (float)i / (float)(numRays - 1);
-			Vector2 rayOrigin = Vector2.Lerp(minVertRay, maxVertRay, lerpDistance);
-			Ray2D ray = new Ray2D(rayOrigin, velocity.normalized);
-			vertHitInfo[i] = Physics2D.Raycast(rayOrigin, velocity.normalized, rayDistance, 1 << LayerMask.NameToLayer("Consumable"));
-			Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.magenta, 1f);
-			// Check raycast results and keep track of closest hit
-			if (vertHitInfo[i].fraction > 0) {
-				vertHit = true;
-				if (vertHitInfo[i].fraction < closestVertHit) {
-					closestVertHit = vertHitInfo[i].fraction;
-					closestVertHitIndex = i;
-					closestVertHitInfo = vertHitInfo[i];
-				}
-			}
-		}
-
-		// Check and handle what we hit
-		if (vertHit) {
-			Consumable consumable = closestVertHitInfo.collider.gameObject.GetComponent<Consumable>();
-			if (consumable) {
-				consumable.gameObject.SetActive(false);
-			}
-		}
 
 		// Check for paths
 		// Cast the ray to check for paths
@@ -178,7 +109,7 @@ public class PathRider : MonoBehaviour {
 		if (pathHit) {
 			RidePath path = closestPathHitInfo.collider.gameObject.GetComponent<RidePath>();
 			// If path exists and is drawOrder is greater than current path's, snap to hit point
-			if (path)
+			if (path && canRidePath)
 				if (currentPath == null || (path.drawOrder > currentPath.drawOrder && path != currentPath)) {
 					PlaceSelfInPath(closestPathHitInfo.point, path);
 				}
@@ -263,28 +194,33 @@ public class PathRider : MonoBehaviour {
 		currentPathVectorIndex = 0;
 		currentPathVector = path[currentPathVectorIndex];
 		nextPathVector = path[currentPathVectorIndex + 1];
-		LeanTween.moveSpline(gameObject, currentSpline.pts, 10f).setSpeed(onPathSpeed).setOnComplete(LeavePath);
+		LeanTween.moveSpline(gameObject, currentSpline.pts, 10f).setSpeed(onPathSpeed).setOnComplete(TryToLeavePath);
 	}
 
-	void LeavePath() {
+	void TryToLeavePath() {
 		Debug.Log("trying to leave");
 		if (Mathf.Abs(currentSpline.ratioAtPoint(transform.position) - 1.0f) < 0.001f ) {
 			Debug.Log("approved to leave");
-			// Set velocity according to last direction of travel on path
-			int last = currentPathVectors.Length - 1;
-			Vector2 direction = (currentPathVectors[last] - currentPathVectors[last - 1]).normalized;
+			LeavePath();
+		} else {
+			LeanTween.moveSpline(gameObject, CreateSpline(currentPathVectors), 10f).setSpeed(onPathSpeed).setOnComplete(TryToLeavePath);
+		}
+	}
+
+	void LeavePath(bool setVelocity = true) {
+		// Set velocity according to last direction of travel on path
+		int last = currentPathVectors.Length - 1;
+		Vector2 direction = (currentPathVectors[last] - currentPathVectors[last - 1]).normalized;
+		if (setVelocity)
 			velocity = direction * offPathSpeed;
 
-			// Exit from end of path
-			Debug.Log("exiting path!");
-			LeanTween.cancel(gameObject);
-			onPath = false;
-			currentPath = null;
-			currentPathVectors = null;
-			currentSpline = null;
-		} else {
-			LeanTween.moveSpline(gameObject, CreateSpline(currentPathVectors), 10f).setSpeed(onPathSpeed).setOnComplete(LeavePath);
-		}
+		// Exit from end of path
+		Debug.Log("exiting path!");
+		LeanTween.cancel(gameObject);
+		onPath = false;
+		currentPath = null;
+		currentPathVectors = null;
+		currentSpline = null;
 	}
 
 	LTSpline CreateSpline(Vector3[] path) {
@@ -301,11 +237,55 @@ public class PathRider : MonoBehaviour {
 	}
 
 	/// <summary>
+	/// Sent when another object enters a trigger collider attached to this
+	/// object (2D physics only).
+	/// </summary>
+	/// <param name="other">The other Collider2D involved in this collision.</param>
+	void OnTriggerEnter2D(Collider2D other) {
+		if (other.gameObject.layer == LayerMask.NameToLayer("Consumable")) {
+			Consumable consumable = other.gameObject.GetComponent<Consumable>();
+			Debug.Log(consumable.restorePercentResource);
+			consumable.gameObject.SetActive(false);
+		}
+		else if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle")) {
+			Bumper bumper = other.gameObject.GetComponent<Bumper>();
+			if (bumper)
+				Bumper(bumper);
+		}
+	}
+
+	void Bumper(Bumper bumper) {
+		Vector3 diff =  transform.position - bumper.transform.position;
+		velocity = diff.normalized * bumper.knockback;
+		StartCoroutine(DisablePathRiding(0.5f));
+		
+		if (bumper.durability == 0)
+			bumper.gameObject.SetActive(false);
+		else
+			bumper.durability--;
+	}
+
+	IEnumerator DisablePathRiding(float time) {
+		LeavePath(false);
+		yield return StartCoroutine(CannotRidePath(time));
+		canRidePath = true;
+	}
+
+	IEnumerator CannotRidePath(float time) {
+		float timer = 0f;
+		while (timer < time) {
+			timer += Time.deltaTime;
+			canRidePath = false;
+			yield return null;
+		}
+	}
+
+	/// <summary>
 	/// OnGUI is called for rendering and handling GUI events.
 	/// This function can be called multiple times per frame (one call per event).
 	/// </summary>
 	void OnGUI() {
 		GUI.Box(new Rect(5,5,150,30), "velocity: " + velocity);
-		GUI.Box(new Rect(5,40,50,30), onPath.ToString());
+		GUI.Box(new Rect(5,40,50,30), canRidePath.ToString());
 	}
 }
