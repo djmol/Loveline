@@ -6,10 +6,17 @@ public class RidePath : MonoBehaviour {
 
 	public int drawOrder = 0;
 	public Vector3[] pathVectors { get; private set; }
-
+	public Vector3 maxX { get; private set; }
+	public bool unidirectional = true;
+	
 	EdgeCollider2D cd;
 	Rigidbody2D rb;
 	LineRenderer rend;
+
+	LTSpline pathSpline;
+	public GameObject pathShine;
+	public float shineSpeed;
+	GameObject shine;
 
 	int numVectors;
 
@@ -25,11 +32,30 @@ public class RidePath : MonoBehaviour {
 		cd = gameObject.AddComponent(typeof(EdgeCollider2D)) as EdgeCollider2D;
 		cd.points = ConvertToVector2Array(pathVectors);
 		cd.isTrigger = true;
+		pathSpline = SplineHelper.CreateSpline(pathVectors);
+
+		// Get position with largest x value (used to determine whether path is still on screen)
+		maxX = GetMaximumXVector();	
+
+		if (unidirectional) {
+			shine = new GameObject("Shine");
+			GameObject shineRendGO = (GameObject)Instantiate(Resources.Load("Prefabs/RoundShine"));
+			SpriteRenderer shineRend = shineRendGO.GetComponent<SpriteRenderer>();
+			shineRend.color = rend.material.color;
+			shine.transform.parent = gameObject.transform;
+			shineRendGO.transform.parent = shine.transform;
+			shineRendGO.transform.position = new Vector3(shine.transform.position.x, shine.transform.position.y, shine.transform.position.z + 1);
+			ShinePathDirection();
+		}
 	}
 	
 	// Update is called once per frame
 	void Update () {
-		
+
+	}
+
+	void ShinePathDirection () {
+		LeanTween.moveSpline(shine, pathSpline, 10f).setSpeed(5f).setOnComplete(ShinePathDirection);
 	}
 
 	Vector2[] ConvertToVector2Array (Vector3[] v3) {
@@ -42,4 +68,15 @@ public class RidePath : MonoBehaviour {
 
 		return v2;
  	}
+
+	Vector3 GetMaximumXVector () {
+		Vector3 maxVector = new Vector3(float.MinValue, 0);
+
+		foreach (Vector3 vec in pathVectors) {
+			if (vec.x > maxVector.x)
+				maxVector = vec;
+		}
+
+		return maxVector;
+	}
 }

@@ -190,11 +190,11 @@ public class PathRider : MonoBehaviour {
 		onPath = true;
 		currentPath = ridePath;
 		currentPathVectors = path;
-		currentSpline = CreateSpline(path);
+		currentSpline = SplineHelper.CreateSpline(path);
 		currentPathVectorIndex = 0;
 		currentPathVector = path[currentPathVectorIndex];
 		nextPathVector = path[currentPathVectorIndex + 1];
-		LeanTween.moveSpline(gameObject, currentSpline.pts, 10f).setSpeed(onPathSpeed).setOnComplete(TryToLeavePath);
+		LeanTween.moveSpline(gameObject, currentSpline, 10f).setSpeed(onPathSpeed).setOnComplete(TryToLeavePath);
 	}
 
 	void TryToLeavePath() {
@@ -203,7 +203,7 @@ public class PathRider : MonoBehaviour {
 			Debug.Log("approved to leave");
 			LeavePath();
 		} else {
-			LeanTween.moveSpline(gameObject, CreateSpline(currentPathVectors), 10f).setSpeed(onPathSpeed).setOnComplete(TryToLeavePath);
+			LeanTween.moveSpline(gameObject, SplineHelper.CreateSpline(currentPathVectors), 10f).setSpeed(onPathSpeed).setOnComplete(TryToLeavePath);
 		}
 	}
 
@@ -221,19 +221,6 @@ public class PathRider : MonoBehaviour {
 		currentPath = null;
 		currentPathVectors = null;
 		currentSpline = null;
-	}
-
-	LTSpline CreateSpline(Vector3[] path) {
-		// The first and last vectors in a spline indicate the angle of the points.
-		// We don't care about the angle, so we just need to duplicate the first and last items.
-		Vector3[] splinePath = new Vector3[path.Length + 2];
-		splinePath[0] = path[0];
-		splinePath[splinePath.Length - 1] = path[path.Length - 1];
-		for (int i = 0; i < path.Length; i++) {
-			splinePath[i + 1] = path[i];
-		}
-
-		return new LTSpline(splinePath);
 	}
 
 	/// <summary>
