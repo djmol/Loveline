@@ -209,6 +209,7 @@ public class PathRider : MonoBehaviour {
 
 	void LeavePath(bool setVelocity = true) {
 		// Set velocity according to last direction of travel on path
+		Debug.Log(currentPathVectors.Length);
 		int last = currentPathVectors.Length - 1;
 		Vector2 direction = (currentPathVectors[last] - currentPathVectors[last - 1]).normalized;
 		if (setVelocity)
@@ -253,7 +254,8 @@ public class PathRider : MonoBehaviour {
 	}
 
 	IEnumerator DisablePathRiding(float time) {
-		LeavePath(false);
+		if (onPath)
+			LeavePath(false);
 		yield return StartCoroutine(CannotRidePath(time));
 		canRidePath = true;
 	}

@@ -29,6 +29,7 @@ public class DrawListener : MonoBehaviour {
 	void Start () {
 		thisCamera = Camera.main;
 		lineRenderer = GetComponent<LineRenderer>();
+		lineRenderer.sortingLayerName = "Character";
 
 		// Resources
 		drawResourceSlider.minValue = 0f;

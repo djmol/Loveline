@@ -34,14 +34,19 @@ public class RidePath : MonoBehaviour {
 		cd.isTrigger = true;
 		pathSpline = SplineHelper.CreateSpline(pathVectors);
 
+		rend.sortingLayerName = "Character";
+
 		// Get position with largest x value (used to determine whether path is still on screen)
-		maxX = GetMaximumXVector();	
+		maxX = GetMaximumXVector();
+		LevelManager lm = GameObject.FindWithTag("GameController").GetComponent<LevelManager>();
+		lm.paths.Add(this);
 
 		if (unidirectional) {
 			shine = new GameObject("Shine");
 			GameObject shineRendGO = (GameObject)Instantiate(Resources.Load("Prefabs/RoundShine"));
 			SpriteRenderer shineRend = shineRendGO.GetComponent<SpriteRenderer>();
-			shineRend.color = rend.material.color;
+			shineRend.sortingLayerName = "Character";
+			shineRend.color = new Color(rend.material.color.r, rend.material.color.g, rend.material.color.b, .75f);
 			shine.transform.parent = gameObject.transform;
 			shineRendGO.transform.parent = shine.transform;
 			shineRendGO.transform.position = new Vector3(shine.transform.position.x, shine.transform.position.y, shine.transform.position.z + 1);
