@@ -8,6 +8,7 @@ public class PathRider : MonoBehaviour {
 	public float maxFall = 1.5f;
 	public float onPathSpeed = 2f;
 	public float offPathSpeed = 2.5f;
+	public ParticleSystem startRidePS;
 
 	RidePath currentPath = null;
 	Vector3[] currentPathVectors = null;
@@ -38,6 +39,8 @@ public class PathRider : MonoBehaviour {
 	void Start () {
 		cd = GetComponent<BoxCollider2D>();
 		velocity = new Vector2(offPathSpeed, 0f);
+		TrailRenderer rend = GetComponentInChildren<TrailRenderer>();
+		rend.sortingLayerName = "Character";
 	}
 	
 	void Update() {
@@ -195,6 +198,7 @@ public class PathRider : MonoBehaviour {
 		currentPathVector = path[currentPathVectorIndex];
 		nextPathVector = path[currentPathVectorIndex + 1];
 		LeanTween.moveSpline(gameObject, currentSpline, 10f).setSpeed(onPathSpeed).setOnComplete(TryToLeavePath);
+		Instantiate(startRidePS, transform.position, Quaternion.identity);
 	}
 
 	void TryToLeavePath() {
