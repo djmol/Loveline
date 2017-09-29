@@ -25,6 +25,7 @@ public class PathRider : MonoBehaviour {
 
 	bool onPath;
 	Vector2 velocity;
+	bool goingRight = true;
 	Collider2D cd;
 	Rect box;
 
@@ -134,6 +135,11 @@ public class PathRider : MonoBehaviour {
 					transform.Translate(velocity * Time.deltaTime);
 			}
 		}
+
+		if (velocity.x > 0f)
+			goingRight = true;
+		else if (velocity.x < 0f)
+			goingRight = false;
 	}
 
 	void PlaceSelfInPath(Vector3 pos, RidePath path) {

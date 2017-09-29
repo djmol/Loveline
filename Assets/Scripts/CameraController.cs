@@ -5,7 +5,7 @@ using UnityEngine;
 public class CameraController : MonoBehaviour {
 
 	// Level information
-	public LevelManager levelManager;
+	LevelManager levelManager;
 	LTSpline camSpline;
 
 	// Camera movement
@@ -13,6 +13,7 @@ public class CameraController : MonoBehaviour {
 
 	// Use this for initialization
 	void Start () {
+		levelManager = GameObject.FindGameObjectWithTag("GameController").GetComponent<LevelManager>();
 		transform.position = levelManager.startPoint.position;
 		camSpline = new LTSpline(new Vector3[]{
 			levelManager.startPoint.position,
@@ -29,5 +30,9 @@ public class CameraController : MonoBehaviour {
 			LeanTween.moveSpline(gameObject, camSpline, levelManager.unitTravelTime * (levelManager.endPoint.position.x - levelManager.startPoint.position.x)).setEaseInOutSine();
 			start = 0;
 		}
+	}
+
+	public void StopCamera() {
+		LeanTween.cancel(gameObject);
 	}
 }
