@@ -9,6 +9,7 @@ public class PathRider : MonoBehaviour {
 	public float onPathSpeed = 2f;
 	public float offPathSpeed = 2.5f;
 	public ParticleSystem startRidePS;
+	public bool onPath { get; private set; }
 
 	RidePath currentPath = null;
 	Vector3[] currentPathVectors = null;
@@ -23,7 +24,6 @@ public class PathRider : MonoBehaviour {
 	float startTimer = 0f;
 	bool started = false;
 
-	bool onPath;
 	Vector2 velocity;
 	bool goingRight = true;
 	Collider2D cd;
@@ -36,10 +36,14 @@ public class PathRider : MonoBehaviour {
 	RaycastHit2D closestVertHitInfo;
 	RaycastHit2D closestPathHitInfo;
 
+	public PathRiderAnimation anim;
+
 	// Use this for initialization
 	void Start () {
 		cd = GetComponent<BoxCollider2D>();
 		velocity = new Vector2(offPathSpeed, 0f);
+		anim = gameObject.AddComponent<PathRiderAnimation>();
+		anim.rider = this;
 		TrailRenderer rend = GetComponentInChildren<TrailRenderer>();
 		if (rend)
 			rend.sortingLayerName = "Character";
@@ -132,8 +136,9 @@ public class PathRider : MonoBehaviour {
 			if (onPath) {
 				
 			} else {
-				if (currentPath == null)
+				if (currentPath == null) {
 					transform.Translate(velocity * Time.deltaTime);
+				}
 			}
 		}
 
@@ -220,7 +225,6 @@ public class PathRider : MonoBehaviour {
 
 	void LeavePath(bool setVelocity = true) {
 		// Set velocity according to last direction of travel on path
-		Debug.Log(currentPathVectors.Length);
 		int last = currentPathVectors.Length - 1;
 		Vector2 direction = (currentPathVectors[last] - currentPathVectors[last - 1]).normalized;
 		if (setVelocity)
@@ -286,6 +290,6 @@ public class PathRider : MonoBehaviour {
 	/// </summary>
 	void OnGUI() {
 		GUI.Box(new Rect(5,5,150,30), "velocity: " + velocity);
-		GUI.Box(new Rect(5,40,50,30), canRidePath.ToString());
+		GUI.Box(new Rect(5,40,150,30), "" + anim.rend.gameObject.transform.eulerAngles.z);
 	}
 }
