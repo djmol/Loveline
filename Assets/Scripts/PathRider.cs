@@ -41,7 +41,8 @@ public class PathRider : MonoBehaviour {
 		cd = GetComponent<BoxCollider2D>();
 		velocity = new Vector2(offPathSpeed, 0f);
 		TrailRenderer rend = GetComponentInChildren<TrailRenderer>();
-		rend.sortingLayerName = "Character";
+		if (rend)
+			rend.sortingLayerName = "Character";
 	}
 	
 	void Update() {

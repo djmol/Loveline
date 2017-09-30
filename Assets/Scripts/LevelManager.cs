@@ -59,6 +59,7 @@ public class LevelManager : MonoBehaviour {
 			float trueY = rider.transform.position.y + rider.GetComponent<BoxCollider2D>().size.y / 2;
 			if (trueX < deathBoundX || trueY < deathBoundY) {
 				dl.gameObject.SetActive(false);
+				rider.SetActive(false);
 				camController.StopCamera();
 				postProc.profile = deathProfile;
 				postProc.enabled = true;
