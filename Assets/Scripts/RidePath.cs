@@ -29,7 +29,10 @@ public class RidePath : MonoBehaviour {
 		// Set up collider and its requisite rigidbody
 		rb = gameObject.AddComponent(typeof(Rigidbody2D)) as Rigidbody2D;
 		rb.bodyType = RigidbodyType2D.Kinematic;
-		cd = gameObject.AddComponent(typeof(EdgeCollider2D)) as EdgeCollider2D;
+		GameObject cdGO = new GameObject("Collider");
+		cdGO.layer = LayerMask.NameToLayer("Path");
+		cdGO.transform.parent = gameObject.transform;
+		cd = cdGO.AddComponent(typeof(EdgeCollider2D)) as EdgeCollider2D;
 		cd.points = ConvertToVector2Array(pathVectors);
 		cd.isTrigger = true;
 		pathSpline = SplineHelper.CreateSpline(pathVectors);

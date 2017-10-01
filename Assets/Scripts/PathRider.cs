@@ -106,6 +106,7 @@ public class PathRider : MonoBehaviour {
 			// Check raycast results and keep track of closest path hit
 			if (pathHitInfo[i].fraction > 0) {
 				pathHit = true;
+				Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.black, 1f);
 				if (pathHitInfo[i].fraction < closestPathHit) {
 					closestPathHit = pathHitInfo[i].fraction;
 					closestPathHitIndex = i;
@@ -116,7 +117,7 @@ public class PathRider : MonoBehaviour {
 
 		// Check and handle what path we hit
 		if (pathHit) {
-			RidePath path = closestPathHitInfo.collider.gameObject.GetComponent<RidePath>();
+			RidePath path = closestPathHitInfo.collider.gameObject.GetComponentInParent<RidePath>();
 			// If path exists and is drawOrder is greater than current path's, snap to hit point
 			if (path && canRidePath)
 				if (currentPath == null || (path.drawOrder > currentPath.drawOrder && path != currentPath)) {
