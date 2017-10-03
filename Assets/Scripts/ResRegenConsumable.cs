@@ -2,9 +2,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-abstract public class Consumable : MonoBehaviour {
+public class ResRegenConsumable : Consumable {
 
-	abstract public System.Type type { get; set; }
+	public float restorePercentResource;
+	public override System.Type type {
+		get {
+			return typeof(ResRegenConsumable);
+		}
+		set { }
+	}
 
 	// Use this for initialization
 	void Start () {

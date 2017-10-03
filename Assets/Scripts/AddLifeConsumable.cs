@@ -2,9 +2,15 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-abstract public class Consumable : MonoBehaviour {
+public class AddLifeConsumable : Consumable {
 
-	abstract public System.Type type { get; set; }
+	public float addLifePoints = 1f;
+	public override System.Type type {
+		get {
+			return typeof(AddLifeConsumable);
+		}
+		set { }
+	}
 
 	// Use this for initialization
 	void Start () {

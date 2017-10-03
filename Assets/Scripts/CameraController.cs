@@ -27,7 +27,7 @@ public class CameraController : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		if (start == 1) {
-			LeanTween.moveSpline(gameObject, camSpline, levelManager.unitTravelTime * (levelManager.endPoint.position.x - levelManager.startPoint.position.x)).setEaseInOutSine();
+			LeanTween.moveSpline(gameObject, camSpline, levelManager.unitTravelTime * (levelManager.endPoint.position.x - levelManager.startPoint.position.x)).setEaseInOutQuad();
 			start = 0;
 		}
 	}

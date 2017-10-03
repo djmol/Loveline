@@ -10,7 +10,8 @@ public class LevelManager : MonoBehaviour {
 	public List<GameObject> riders { get; private set; }
 	public List<RidePath> paths { get; private set; }
 	public bool dead { get; private set; }
-
+	public float addLifePoints = 0f;
+	public float maxAddLifePoints = 8f;
 
 	List<RidePath> pathsToDelete;
 	float checkForDeadPaths = 5f;

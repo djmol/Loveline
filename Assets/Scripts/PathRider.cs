@@ -10,6 +10,7 @@ public class PathRider : MonoBehaviour {
 	public float offPathSpeed = 2.5f;
 	public ParticleSystem startRidePS;
 	public bool onPath { get; private set; }
+	public PathRiderAnimation anim { get; private set; }
 
 	RidePath currentPath = null;
 	Vector3[] currentPathVectors = null;
@@ -26,17 +27,18 @@ public class PathRider : MonoBehaviour {
 
 	Vector2 velocity;
 	bool goingRight = true;
-	Collider2D cd;
-	Rect box;
 
 	// Raycasting
+	Collider2D cd;
+	Rect box;
 	int numRays = 5;
 	int numPathRays = 1;
 	RaycastHit2D closestHorzHitInfo;
 	RaycastHit2D closestVertHitInfo;
 	RaycastHit2D closestPathHitInfo;
 
-	public PathRiderAnimation anim;
+	LevelManager lm;
+	DrawListener dl;	
 
 	// Use this for initialization
 	void Start () {
@@ -47,6 +49,9 @@ public class PathRider : MonoBehaviour {
 		TrailRenderer rend = GetComponentInChildren<TrailRenderer>();
 		if (rend)
 			rend.sortingLayerName = "Character";
+
+		dl = GameObject.FindGameObjectWithTag("DrawListener").GetComponent<DrawListener>();
+		lm = GameObject.FindGameObjectWithTag("GameController").GetComponent<LevelManager>();
 	}
 	
 	void Update() {
@@ -77,7 +82,7 @@ public class PathRider : MonoBehaviour {
 		// Ride path
 		else {
 			// Calculate velocity based on movement along path
-			if (currentSpline.ratioAtPoint(nextPathVector) < currentSpline.ratioAtPoint(transform.position)) {
+			while (currentSpline.ratioAtPoint(nextPathVector) < currentSpline.ratioAtPoint(transform.position)) {
 				currentPathVector = nextPathVector;
 				currentPathVectorIndex++;
 				nextPathVector = currentPathVectors[currentPathVectorIndex + 1];
@@ -159,6 +164,13 @@ public class PathRider : MonoBehaviour {
 			if (distance < shortestDistance) {
 				shortestDistance = distance;
 				shortest = i;
+			}
+		}
+
+		// Push closest point forward if it's behind point of contact in the path
+		if (pathVectors.Length > shortest + 1) {
+			if (Vector3.Distance(pos, pathVectors[shortest+1]) < Vector3.Distance(pathVectors[shortest], pathVectors[shortest+1])) {
+				shortest++;
 			}
 		}
 
@@ -247,9 +259,12 @@ public class PathRider : MonoBehaviour {
 	/// <param name="other">The other Collider2D involved in this collision.</param>
 	void OnTriggerEnter2D(Collider2D other) {
 		if (other.gameObject.layer == LayerMask.NameToLayer("Consumable")) {
-			Consumable consumable = other.gameObject.GetComponent<Consumable>();
-			Debug.Log(consumable.restorePercentResource);
-			consumable.gameObject.SetActive(false);
+			Consumable con = other.gameObject.GetComponent<Consumable>();
+			if (con.type.Equals(typeof(ResRegenConsumable))) {
+				ResRegenConsumable(con.GetComponent<ResRegenConsumable>());
+			} else if (con.type.Equals(typeof(AddLifeConsumable))) {
+				AddLifeConsumable(con.GetComponent<AddLifeConsumable>());
+			}
 		}
 		else if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle")) {
 			Bumper bumper = other.gameObject.GetComponent<Bumper>();
@@ -258,10 +273,22 @@ public class PathRider : MonoBehaviour {
 		}
 	}
 
+	void ResRegenConsumable(ResRegenConsumable rrCon) {
+		dl.drawResource += rrCon.restorePercentResource * dl.maxDrawResource;
+		rrCon.gameObject.SetActive(false);
+		Destroy(rrCon.gameObject);
+	}
+
+	void AddLifeConsumable(AddLifeConsumable alCon) {
+		lm.addLifePoints += alCon.addLifePoints;
+		alCon.gameObject.SetActive(false);
+		Destroy(alCon.gameObject);
+	}
+
 	void Bumper(Bumper bumper) {
-		Vector3 diff =  transform.position - bumper.transform.position;
+		Vector3 diff = transform.position - bumper.transform.position;
 		velocity = diff.normalized * bumper.knockback;
-		StartCoroutine(DisablePathRiding(0.5f));
+		StartCoroutine(DisablePathRiding(bumper.disableTime));
 		
 		if (bumper.durability == 0)
 			bumper.gameObject.SetActive(false);
