@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class AddLifeConsumable : Consumable {
+public class EnergyConsumable : Consumable {
 
 	public float addLifePoints = 1f;
 	public override System.Type type {
 		get {
-			return typeof(AddLifeConsumable);
+			return typeof(EnergyConsumable);
 		}
 		set { }
 	}

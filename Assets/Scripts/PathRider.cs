@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class PathRider : MonoBehaviour {
 
+	public bool mainRider = false;
 	public float gravity = .001f;
 	public float maxFall = 1.5f;
 	public float onPathSpeed = 2f;
@@ -262,8 +263,8 @@ public class PathRider : MonoBehaviour {
 			Consumable con = other.gameObject.GetComponent<Consumable>();
 			if (con.type.Equals(typeof(ResRegenConsumable))) {
 				ResRegenConsumable(con.GetComponent<ResRegenConsumable>());
-			} else if (con.type.Equals(typeof(AddLifeConsumable))) {
-				AddLifeConsumable(con.GetComponent<AddLifeConsumable>());
+			} else if (con.type.Equals(typeof(EnergyConsumable))) {
+				EnergyConsumable(con.GetComponent<EnergyConsumable>());
 			}
 		}
 		else if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle")) {
@@ -279,10 +280,10 @@ public class PathRider : MonoBehaviour {
 		Destroy(rrCon.gameObject);
 	}
 
-	void AddLifeConsumable(AddLifeConsumable alCon) {
-		lm.addLifePoints += alCon.addLifePoints;
-		alCon.gameObject.SetActive(false);
-		Destroy(alCon.gameObject);
+	void EnergyConsumable(EnergyConsumable enCon) {
+		lm.addLifePoints += enCon.addLifePoints;
+		enCon.gameObject.SetActive(false);
+		Destroy(enCon.gameObject);
 	}
 
 	void Bumper(Bumper bumper) {
@@ -317,7 +318,7 @@ public class PathRider : MonoBehaviour {
 	/// This function can be called multiple times per frame (one call per event).
 	/// </summary>
 	void OnGUI() {
-		GUI.Box(new Rect(5,5,150,30), "velocity: " + velocity);
-		GUI.Box(new Rect(5,40,150,30), "" + anim.rend.gameObject.transform.eulerAngles.z);
+		//GUI.Box(new Rect(5,5,150,30), "velocity: " + velocity);
+		//GUI.Box(new Rect(5,40,150,30), "" + anim.rend.gameObject.transform.eulerAngles.z);
 	}
 }

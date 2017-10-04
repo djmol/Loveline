@@ -6,6 +6,10 @@ public class LevelManager : MonoBehaviour {
 
 	public Transform startPoint;
 	public Transform endPoint;
+	public float upperXBound { get; private set; }
+	public float lowerXBound { get; private set; }
+	public float upperYBound { get; private set; }
+	public float lowerYBound { get; private set; }
 	public float unitTravelTime; // The average amount of time it takes for the camera to travel one unit
 	public List<GameObject> riders { get; private set; }
 	public List<RidePath> paths { get; private set; }
@@ -50,21 +54,29 @@ public class LevelManager : MonoBehaviour {
 			}
 		}
 
+		// Update camera bounds
+		upperXBound = cam.gameObject.transform.position.x + (cam.orthographicSize * Screen.width / Screen.height);
+		lowerXBound = cam.gameObject.transform.position.x - (cam.orthographicSize * Screen.width / Screen.height);
+		upperYBound = cam.gameObject.transform.position.y + cam.orthographicSize;
+		lowerYBound = cam.gameObject.transform.position.y - cam.orthographicSize;
+
 		// Update death bounds
-		deathBoundX = cam.gameObject.transform.position.x - (cam.orthographicSize * Screen.width / Screen.height);
-		deathBoundY = cam.gameObject.transform.position.y - cam.orthographicSize;
+		deathBoundX = lowerXBound;
+		deathBoundY = lowerYBound;		
 
 		// Watch for deaths
 		foreach (GameObject rider in riders) {
-			float trueX = rider.transform.position.x + rider.GetComponent<BoxCollider2D>().size.x / 2;
-			float trueY = rider.transform.position.y + rider.GetComponent<BoxCollider2D>().size.y / 2;
-			if (trueX < deathBoundX || trueY < deathBoundY) {
-				dl.gameObject.SetActive(false);
-				rider.SetActive(false);
-				camController.StopCamera();
-				postProc.profile = deathProfile;
-				postProc.enabled = true;
-				dead = true;
+			if (rider.GetComponent<PathRider>().mainRider) {
+				float trueX = rider.transform.position.x + rider.GetComponent<BoxCollider2D>().size.x / 2;
+				float trueY = rider.transform.position.y + rider.GetComponent<BoxCollider2D>().size.y / 2;
+				if (trueX < deathBoundX || trueY < deathBoundY) {
+					dl.gameObject.SetActive(false);
+					rider.SetActive(false);
+					camController.StopCamera();
+					postProc.profile = deathProfile;
+					postProc.enabled = true;
+					dead = true;
+				}
 			}
 		}
 
