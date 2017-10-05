@@ -44,6 +44,12 @@ public class LevelManager : MonoBehaviour {
 		riders.AddRange(GameObject.FindGameObjectsWithTag("Player"));
 		postProc = cam.gameObject.GetComponent<UnityEngine.PostProcessing.PostProcessingBehaviour>();
 		deathProfile = (UnityEngine.PostProcessing.PostProcessingProfile)Instantiate(Resources.Load("Profiles/DeathProfile"));
+
+		// Determine camera bounds
+		upperXBound = cam.gameObject.transform.position.x + (cam.orthographicSize * Screen.width / Screen.height);
+		lowerXBound = cam.gameObject.transform.position.x - (cam.orthographicSize * Screen.width / Screen.height);
+		upperYBound = cam.gameObject.transform.position.y + cam.orthographicSize;
+		lowerYBound = cam.gameObject.transform.position.y - cam.orthographicSize;
 	}
 	
 	// Update is called once per frame

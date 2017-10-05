@@ -93,8 +93,8 @@ public class PathRider : MonoBehaviour {
 
 		// Calculate ray distance (current fall speed) and direction
 		//float rayDistance = box.height / 2 + Mathf.Abs(velocity.y * Time.deltaTime);
-		// TODO: This can't be right. The 1.5f is just to lengthen it a little to reduce the chance of missing an edge collider.
-		float rayDistance = Mathf.Abs(velocity.magnitude * 1.5f * Time.deltaTime);
+		// TODO: This can't be right. The 2f is just to lengthen it a little to reduce the chance of missing an edge collider.
+		float rayDistance = Mathf.Abs(velocity.magnitude * 2f * Time.deltaTime);
 
 		// Check for paths
 		// Cast the ray to check for paths
@@ -108,11 +108,11 @@ public class PathRider : MonoBehaviour {
 			Vector2 rayOrigin = transform.position; //Vector2.Lerp(minRay, maxRay, lerpDistance);
 			Ray2D ray = new Ray2D(rayOrigin, velocity.normalized);
 			pathHitInfo[i] = Physics2D.Raycast(rayOrigin, velocity.normalized, rayDistance, 1 << LayerMask.NameToLayer("Path"));
-			Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.cyan, 1f);
+			Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.cyan, 10f);
 			// Check raycast results and keep track of closest path hit
 			if (pathHitInfo[i].fraction > 0) {
 				pathHit = true;
-				Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.black, 1f);
+				Debug.DrawRay(ray.origin, ray.direction * rayDistance, Color.black, 10f);
 				if (pathHitInfo[i].fraction < closestPathHit) {
 					closestPathHit = pathHitInfo[i].fraction;
 					closestPathHitIndex = i;
@@ -177,12 +177,10 @@ public class PathRider : MonoBehaviour {
 
 		// Get length of partial path (+ 1 as our point of contact will be the starting point)
 		int partialPathLength = (pathVectors.Length - shortest) + 1;
-		
-		// LeanTween requires 4 or more points in a spline path!
-		if (partialPathLength > 3) {
-			// Ride partial path
-			RidePath(path, shortest, pos);
-		}
+		Debug.Log("trying to ride " + path + ", partial length: " + partialPathLength);
+
+		// Ride partial path
+		RidePath(path, shortest, pos);
 	}
 
 	void RidePath(RidePath ridePath, int start = 0, Vector3? startVector = null) {
@@ -282,6 +280,8 @@ public class PathRider : MonoBehaviour {
 
 	void EnergyConsumable(EnergyConsumable enCon) {
 		lm.addLifePoints += enCon.addLifePoints;
+		enCon.audioSource.pitch = 1f + ((lm.addLifePoints - 1) * .1f);
+		enCon.audioSource.PlayOneShot(enCon.audioSource.clip);
 		enCon.gameObject.SetActive(false);
 		Destroy(enCon.gameObject);
 	}
