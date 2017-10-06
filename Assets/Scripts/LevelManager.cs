@@ -14,13 +14,12 @@ public class LevelManager : MonoBehaviour {
 	public List<GameObject> riders { get; private set; }
 	public List<RidePath> paths { get; private set; }
 	public bool dead { get; private set; }
-	public float addLifePoints = 0f;
-	public float maxAddLifePoints = 8f;
+	public int addLifePoints = 0;
+	public int maxAddLifePoints = 8;
 
 	List<RidePath> pathsToDelete;
 	float checkForDeadPaths = 5f;
 	float nextCheckForDeathPaths;
-
 	DrawListener dl;
 	Camera cam;
 	CameraController camController;
@@ -86,25 +85,22 @@ public class LevelManager : MonoBehaviour {
 			}
 		}
 
-		// TODO: This doesn't work, and replace the - 11f with half of the screen width
+		// Check for and remove dead paths
 		if (Time.time > nextCheckForDeathPaths) {
 			nextCheckForDeathPaths += checkForDeadPaths;
 			foreach (RidePath path in paths) {
-				if (path.maxX.x < cam.transform.position.x - 11f) { 
+				if (path.maxX.x < deathBoundX) { 
 					pathsToDelete.Add(path);
 				}
 			}
 
 			if (pathsToDelete.Count > 0) {
 				foreach (RidePath path in pathsToDelete) {
-					Destroy(path);
+					Destroy(path.gameObject);
 					paths.Remove(path);
 				}
-
 				pathsToDelete.Clear();
 			}
-		}
-
-		
+		}		
 	}
 }

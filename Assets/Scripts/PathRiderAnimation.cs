@@ -50,6 +50,7 @@ public class PathRiderAnimation : MonoBehaviour {
 		if (rend.gameObject.transform.eulerAngles.z <= wobbleAngle) {
 			angleBack = -rend.gameObject.transform.eulerAngles.z;
 		} else {
+			Debug.Log("dismounting at z = " + rend.gameObject.transform.eulerAngles.z);
 			angleBack = 360 - rend.gameObject.transform.eulerAngles.z;
 		}
 		

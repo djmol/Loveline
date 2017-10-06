@@ -39,7 +39,8 @@ public class PathRider : MonoBehaviour {
 	RaycastHit2D closestPathHitInfo;
 
 	LevelManager lm;
-	DrawListener dl;	
+	DrawListener dl;
+	AudioSource audio;	
 
 	// Use this for initialization
 	void Start () {
@@ -53,6 +54,7 @@ public class PathRider : MonoBehaviour {
 
 		dl = GameObject.FindGameObjectWithTag("DrawListener").GetComponent<DrawListener>();
 		lm = GameObject.FindGameObjectWithTag("GameController").GetComponent<LevelManager>();
+		audio = GetComponent<AudioSource>();
 	}
 	
 	void Update() {
@@ -177,8 +179,8 @@ public class PathRider : MonoBehaviour {
 
 		// Get length of partial path (+ 1 as our point of contact will be the starting point)
 		int partialPathLength = (pathVectors.Length - shortest) + 1;
-		Debug.Log("trying to ride " + path + ", partial length: " + partialPathLength);
 
+		Debug.Log("trying to ride " + path + " with ppl " + partialPathLength);
 		// Ride partial path
 		RidePath(path, shortest, pos);
 	}
@@ -260,33 +262,32 @@ public class PathRider : MonoBehaviour {
 		if (other.gameObject.layer == LayerMask.NameToLayer("Consumable")) {
 			Consumable con = other.gameObject.GetComponent<Consumable>();
 			if (con.type.Equals(typeof(ResRegenConsumable))) {
-				ResRegenConsumable(con.GetComponent<ResRegenConsumable>());
+				HandleResRegenConsumable(con.GetComponent<ResRegenConsumable>());
 			} else if (con.type.Equals(typeof(EnergyConsumable))) {
-				EnergyConsumable(con.GetComponent<EnergyConsumable>());
+				HandleEnergyConsumable(con.GetComponent<EnergyConsumable>());
 			}
 		}
 		else if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle")) {
 			Bumper bumper = other.gameObject.GetComponent<Bumper>();
 			if (bumper)
-				Bumper(bumper);
+				HandleBumper(bumper);
 		}
 	}
 
-	void ResRegenConsumable(ResRegenConsumable rrCon) {
+	void HandleResRegenConsumable(ResRegenConsumable rrCon) {
 		dl.drawResource += rrCon.restorePercentResource * dl.maxDrawResource;
 		rrCon.gameObject.SetActive(false);
 		Destroy(rrCon.gameObject);
 	}
 
-	void EnergyConsumable(EnergyConsumable enCon) {
+	void HandleEnergyConsumable(EnergyConsumable enCon) {
 		lm.addLifePoints += enCon.addLifePoints;
-		enCon.audioSource.pitch = 1f + ((lm.addLifePoints - 1) * .1f);
-		enCon.audioSource.PlayOneShot(enCon.audioSource.clip);
+		audio.PlayOneShot(enCon.manager.pickupSounds[lm.addLifePoints - 1]);
 		enCon.gameObject.SetActive(false);
 		Destroy(enCon.gameObject);
 	}
 
-	void Bumper(Bumper bumper) {
+	void HandleBumper(Bumper bumper) {
 		Vector3 diff = transform.position - bumper.transform.position;
 		velocity = diff.normalized * bumper.knockback;
 		StartCoroutine(DisablePathRiding(bumper.disableTime));

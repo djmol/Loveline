@@ -4,8 +4,8 @@ using UnityEngine;
 
 public class EnergyConsumable : Consumable {
 
-	public float addLifePoints = 1f;
-	public AudioSource audioSource;
+	public int addLifePoints = 1;
+	public EnergyConsumableManager manager { get; private set; }
 	public override System.Type type {
 		get {
 			return typeof(EnergyConsumable);
@@ -15,7 +15,7 @@ public class EnergyConsumable : Consumable {
 
 	// Use this for initialization
 	void Start () {
-		audioSource = GetComponentInParent<AudioSource>();
+		manager = GetComponentInParent<EnergyConsumableManager>();
 	}
 	
 	// Update is called once per frame

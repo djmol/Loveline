@@ -12,7 +12,7 @@ public static class SplineHelper {
 		for (int i = 0; i < path.Length; i++) {
 			splinePath[i + 1] = path[i];
 		}
-
+		
 		return new LTSpline(splinePath);
 	}
 }

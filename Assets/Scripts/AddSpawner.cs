@@ -24,8 +24,8 @@ public class AddSpawner : MonoBehaviour {
 			sprRend.enabled = false;
 		} else if (lm.addLifePoints < lm.maxAddLifePoints) {
 			sprRend.enabled = true;
-			sprRend.color = new Color(1f, 1f, 1f, (lm.addLifePoints / lm.maxAddLifePoints));
-			sprRend.gameObject.transform.localScale = minimumScale + ((maximumScale - minimumScale) * (lm.addLifePoints / lm.maxAddLifePoints));
+			sprRend.color = new Color(1f, 1f, 1f, ((float)lm.addLifePoints / (float)lm.maxAddLifePoints));
+			sprRend.gameObject.transform.localScale = minimumScale + ((maximumScale - minimumScale) * ((float)lm.addLifePoints / (float)lm.maxAddLifePoints));
 		} else {
 			lm.addLifePoints -= lm.maxAddLifePoints;
 			Instantiate(addPrefab, transform.position, Quaternion.identity);
