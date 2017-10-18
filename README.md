@@ -2,7 +2,7 @@
 
 A 2D physics runner-esque game in Unity.
 
-![Loveline gameplay](https://media.giphy.com/media/3ov9kaFdEyLrfjeqLm/giphy.gif)
+![Loveline gameplay](https://i.giphy.com/3ov9kaFdEyLrfjeqLm.gif)
 
 Draw paths to guide your heart to the end!
 
